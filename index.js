@@ -1,60 +1,65 @@
-const request = require('request');
+const ethers = require('ethers');
+const provider = new ethers.providers.JsonRpcProvider(process.env.URL);
+const privateKey = process.env.PRIVATE_KEY;
+const wallet = new ethers.Wallet(privateKey, provider);
+
+const encode = (type, value) => {
+  let retVal;
+  switch (type) {
+    case 'bytes32':
+      retVal = ethers.utils.formatBytes32String(value);
+      break;
+    default:
+      retVal = ethers.utils.defaultAbiCoder.encode([type], [value]);
+      break;
+  }
+  return retVal.slice(2);
+};
 
 const createRequest = (input, callback) => {
-    let url = process.env.URL || "";
-    // Including an endpoint parameter is optional but common. 
-    const endpoint = input.data.endpoint || "";
-    // Include a trailing slash "/" in your url if this is in use
-    url = url + endpoint;
-    /* Create additional input params here, for example:
-    const coin = input.data.coin || "";
-    const market = input.data.market || "";
-    */
-    let queryObj;
-    /* Build your query object with the given input params, for example:
-    queryObj = {
-        coin: coin,
-        market: market
-    }
-    */
-    const options = {
-        url: url,
-        // Change the API_KEY key name to the name specified by the API
-        headers: {
-            "API_KEY": process.env.API_KEY
-        },
-        qs: queryObj,
-        json: true
-    }
-    request(options, (error, response, body) => {
-        // Add any API-specific failure case here to pass that error back to Chainlink
-        if (error || response.statusCode >= 400) {
-            callback(response.statusCode, {
-                jobRunID: input.id,
-                status: "errored",
-                error: body,
-                statusCode: response.statusCode
-            });
-        } else {
-            callback(response.statusCode, {
-                jobRunID: input.id,
-                data: body,
-                statusCode: response.statusCode
-            });
-        }
+  const externalAddress = input.data.exAddr || '';
+  const functionId = input.data.funcId || '';
+  const dataType = input.data.dataType || 'uint256';
+  // Prioritize data coming from a previous adapter (result),
+  // but allow dataToSend to be used if specified
+  const dataToSend = input.data.result || input.data.dataToSend || '';
+
+  // Ensure we use only 4 bytes for the functionId
+  const transactionData = functionId.substring(0, 10) + encode(dataType, dataToSend);
+
+  const transaction = {
+    to: externalAddress,
+    data: transactionData
+  };
+
+  let sendTransactionPromise = wallet.sendTransaction(transaction);
+
+  sendTransactionPromise.then((tx) => {
+    callback(200, {
+      jobRunID: input.id,
+      data: tx,
+      statusCode: 200
     });
+  }).catch((err) => {
+    callback(400, {
+      jobRunID: input.id,
+      status: 'errored',
+      error: err,
+      statusCode: 400
+    });
+  });
 };
 
 exports.gcpservice = (req, res) => {
-    createRequest(req.body, (statusCode, data) => {
-        res.status(statusCode).send(data);
-    });
+  createRequest(req.body, (statusCode, data) => {
+    res.status(statusCode).send(data);
+  });
 };
 
 exports.handler = (event, context, callback) => {
-    createRequest(event, (statusCode, data) => {
-        callback(null, data);
-    });
+  createRequest(event, (statusCode, data) => {
+    callback(null, data);
+  });
 }
 
 module.exports.createRequest = createRequest;

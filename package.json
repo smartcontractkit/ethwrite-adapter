@@ -1,14 +1,14 @@
 {
-  "name": "EA-NodeJS-Template",
+  "name": "chainlink-ethtx-ea",
   "version": "1.0.0",
-  "author": "",
-  "description": "",
+  "author": "Thomas Hodges (thomas@smartcontract.com)",
+  "description": "A Chainlink external adapter for writing to Ethereum-based blockchains",
   "license": "MIT",
   "scripts": {
     "test": "./node_modules/.bin/_mocha"
   },
   "dependencies": {
-    "request": "^2.88.0"
+    "ethers": "^4.0.27"
   },
   "devDependencies": {
     "chai": "^4.2.0",
