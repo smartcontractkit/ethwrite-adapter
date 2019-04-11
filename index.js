@@ -41,6 +41,7 @@ const createRequest = (input, callback) => {
       statusCode: 200
     });
   }).catch((err) => {
+    console.log('Error!', err)
     callback(400, {
       jobRunID: input.id,
       status: 'errored',
