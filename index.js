@@ -52,13 +52,13 @@ const createRequest = (input, callback) => {
 };
 
 exports.gcpservice = (req, res) => {
-  createRequest(req.body, (statusCode, data) => {
+  createRequest(JSON.parse(req.body), (statusCode, data) => {
     res.status(statusCode).send(data);
   });
 };
 
 exports.handler = (event, context, callback) => {
-  createRequest(event, (statusCode, data) => {
+  createRequest(JSON.parse(event), (statusCode, data) => {
     callback(null, data);
   });
 }
